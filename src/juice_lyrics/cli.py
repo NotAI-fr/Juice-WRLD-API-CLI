@@ -682,6 +682,80 @@ def embed_batch(settings: Settings, files: list[Path], use_color: bool, refresh:
     return 1 if errors else 0
 
 
+
+# Core-engine adapters. These keep the CLI commands backward-compatible while
+# moving reusable functionality into dedicated modules.
+from .config.settings import Settings as _CoreSettings
+from .api.client import search_song_names as _api_search_song_names, search_songs as _api_search_songs, get_song as _api_get_song
+from .library.matching import normalize as _normalize, parse_version as _parse_version, strip_version as _strip_version, parse_length as _parse_length, local_duration as _local_duration, search_title_for as _search_title_for, score_candidate as _score_candidate, choose_candidate as _choose_candidate
+from .lyrics.engine import parse_synced_lyrics as _parse_synced_lyrics, embed_lyrics as _embed_lyrics, verify_file as _verify_file, write_lrc as _write_lrc
+from .library.scanner import find_mp3s as _find_mp3s
+from .backup.manager import make_backup_root as _make_backup_root, backup_file as _backup_file, write_manifest as _write_manifest, restore_backup as _restore_backup
+from .state import load_state as _load_state, save_state as _save_state, sha256_file as _sha256_file
+from .rmpc.integration import patch_rmpc_config as _patch_rmpc_config, rmpc_running as _rmpc_running, notify_rmpc_index as _notify_rmpc_index
+
+
+def search_api(settings: Settings, title: str, refresh: bool = False) -> list[dict[str, Any]]:
+    return _api_search_song_names(settings, title, refresh=refresh)
+
+
+def search_api_advanced(settings: Settings, query: str, category: str | None = None, era: str | None = None, refresh: bool = False) -> dict[str, Any]:
+    return _api_search_songs(settings, query, category=category, era=era, refresh=refresh)
+
+
+def get_song(settings: Settings, song_id: int) -> dict[str, Any]:
+    return _api_get_song(settings, song_id)
+
+Settings = _CoreSettings
+normalize = _normalize
+parse_version = _parse_version
+strip_version = _strip_version
+parse_length = _parse_length
+local_duration = _local_duration
+search_title_for = _search_title_for
+score_candidate = _score_candidate
+choose_candidate = _choose_candidate
+parse_synced_lyrics = _parse_synced_lyrics
+embed_lyrics = _embed_lyrics
+verify_file = _verify_file
+find_mp3s = _find_mp3s
+make_backup_root = _make_backup_root
+backup_file = _backup_file
+write_manifest = _write_manifest
+restore_backup = _restore_backup
+load_state = _load_state
+save_state = _save_state
+sha256_file = _sha256_file
+patch_rmpc_config = _patch_rmpc_config
+rmpc_running = _rmpc_running
+notify_rmpc_index = _notify_rmpc_index
+
+
+def write_lrc(path: Path, analysis: dict[str, Any], out_dir: Path) -> Path:
+    return _write_lrc(path, analysis.get("synced") or [], analysis.get("candidate") or {}, out_dir)
+
+
+def load_settings(path_override: str | None = None, api_override: str | None = None) -> Settings:
+    settings = Settings()
+    if CONFIG_FILE.exists():
+        try:
+            import tomllib
+            data = tomllib.loads(CONFIG_FILE.read_text(encoding="utf-8"))
+            if data.get("music_dir"):
+                settings.music_dir = Path(str(data["music_dir"])).expanduser()
+            settings.api_base = str(data.get("api_base", settings.api_base)).rstrip("/")
+            settings.timeout = int(data.get("timeout", settings.timeout))
+            settings.delay = float(data.get("delay", settings.delay))
+            settings.duration_tolerance = float(data.get("duration_tolerance", settings.duration_tolerance))
+            settings.cache_ttl_hours = float(data.get("cache_ttl_hours", settings.cache_ttl_hours))
+        except Exception as exc:
+            raise RuntimeError(f"Could not read config {CONFIG_FILE}: {exc}") from exc
+    if path_override:
+        settings.music_dir = Path(path_override).expanduser()
+    if api_override:
+        settings.api_base = api_override.rstrip("/")
+    return settings
+
 def command_setup(args: argparse.Namespace, settings: Settings, use_color: bool) -> int:
     print_header("juice-lyrics First-Time Setup", use_color)
     print(f"Library: {settings.music_dir}")

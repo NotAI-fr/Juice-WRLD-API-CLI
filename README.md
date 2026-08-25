@@ -79,6 +79,19 @@ juice-lyrics info "Rental"
 
 The project intentionally does **not** provide bulk downloading of leaked/copyrighted recordings. The media-management workflow operates on audio already present in the user's local library.
 
+## Project documentation
+
+The repository keeps its development and continuity context in version-controlled documentation so work can safely continue across chats or coding agents:
+
+- `PROJECT_CONTEXT.md` — user/project context and major decisions
+- `docs/ROADMAP.md` — current and planned work
+- `docs/ARCHITECTURE.md` — component responsibilities and dependency direction
+- `docs/USER_GUIDE.md` — straightforward user workflows
+- `docs/DEVELOPMENT.md` — development and testing guidance
+- `docs/CHANGELOG.md` — release and milestone history
+
+Before major changes, read `PROJECT_CONTEXT.md`, `docs/ROADMAP.md`, and `docs/ARCHITECTURE.md`.
+
 ## Commands
 
 | Command | Purpose |
